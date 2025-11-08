@@ -1,5 +1,52 @@
 // src/services/gameState.js
-const triviaScores = {};
+import { readFile, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path to the JSON file for persistent storage
+const TRIVIA_SCORES_PATH = path.join(__dirname, '../../data/triviaScores.json');
+
+// In-memory cache of trivia scores
+let triviaScores = {};
+
+// Load scores from JSON file
+async function loadScores() {
+  try {
+    if (existsSync(TRIVIA_SCORES_PATH)) {
+      const data = await readFile(TRIVIA_SCORES_PATH, 'utf-8');
+      triviaScores = JSON.parse(data);
+      console.log('✅ Loaded trivia scores from disk');
+    } else {
+      console.log('📝 No existing trivia scores file found, starting fresh');
+    }
+  } catch (error) {
+    console.error('⚠️ Error loading trivia scores:', error.message);
+    triviaScores = {}; // Start fresh on error
+  }
+}
+
+// Save scores to JSON file
+async function saveScores() {
+  try {
+    // Ensure data directory exists
+    const dataDir = path.dirname(TRIVIA_SCORES_PATH);
+    if (!existsSync(dataDir)) {
+      const { mkdir } = await import('fs/promises');
+      await mkdir(dataDir, { recursive: true });
+    }
+
+    await writeFile(TRIVIA_SCORES_PATH, JSON.stringify(triviaScores, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('⚠️ Error saving trivia scores:', error.message);
+  }
+}
+
+// Initialize scores on module load
+loadScores();
 
 export function recordTriviaResult(userId, isCorrect) {
   if (!triviaScores[userId]) {
@@ -7,6 +54,9 @@ export function recordTriviaResult(userId, isCorrect) {
   }
   if (isCorrect) triviaScores[userId].correct++;
   else triviaScores[userId].incorrect++;
+
+  // Save to disk after updating
+  saveScores();
 }
 
 export function getTriviaRecord(userId) {
