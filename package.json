@@ -13,7 +13,7 @@
   "scripts": {
     "start": "node src/app.js",
     "register": "node src/commands.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
     "lint": "eslint . --fix"
   },
   "author": "Shay DeWael",
